@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>STEM Racing PRO – Reglamento y Simulador de Tolerancias</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a;
+  --text:#eef1f6; --muted:#9aa3b2; --accent:#ff2e88; --accent2:#ff8a2e;
+  --ok:#33d17a; --warn:#ff4d4d; --safety:#ff4d4d; --general:#4da3ff; --perf:#ffd23f;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f6f9; --panel:#ffffff; --panel2:#f0f1f5; --border:#dcdfe6;
+    --text:#161822; --muted:#5b6270; --ok:#1c9a56; --warn:#d81f3d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#2a2f3a; --text:#eef1f6; --muted:#9aa3b2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.45}
+header{padding:28px 20px 18px;text-align:center;background:linear-gradient(120deg,#ff2e88,#ff8a2e);color:#fff}
+header h1{margin:0;font-size:1.6rem}
+header p{margin:6px 0 0;opacity:.95;font-size:.95rem}
+.wrap{max-width:1000px;margin:0 auto;padding:20px}
+h2{font-size:1.15rem;border-left:5px solid var(--accent);padding-left:10px;margin-top:34px}
+.tag{display:inline-block;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px;color:#111}
+.tag.SAFETY{background:var(--safety);color:#fff}
+.tag.GENERAL{background:var(--general);color:#fff}
+.tag.PERFORMANCE{background:var(--perf);color:#111}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+ul{margin:6px 0;padding-left:20px}
+.small{color:var(--muted);font-size:.85rem}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left}
+th{color:var(--muted);font-weight:600}
+.calc-row{display:grid;grid-template-columns:1.6fr .9fr 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.calc-row:last-child{border-bottom:none}
+.calc-row label{font-size:.86rem}
+.calc-row .id{color:var(--muted);font-size:.72rem;display:block}
+input[type=number]{width:100%;padding:7px 8px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-size:.9rem}
+.status{font-size:.82rem;font-weight:600;border-radius:8px;padding:6px 8px;text-align:center}
+.status.ok{background:rgba(51,209,122,.15);color:var(--ok)}
+.status.warn{background:rgba(255,77,77,.15);color:var(--warn)}
+.status.empty{background:transparent;color:var(--muted);font-weight:400}
+.summary{position:sticky;bottom:0;background:var(--panel);border:1px solid var(--accent);border-radius:12px;padding:14px 16px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.summary b{font-size:1.3rem;color:var(--accent)}
+.reset{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.85rem}
+.reset:hover{border-color:var(--accent)}
+footer{text-align:center;color:var(--muted);font-size:.78rem;padding:30px 10px}
+#regTable input[type=text]{width:100%;min-width:70px;padding:5px 6px;border-radius:6px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-size:.82rem}
+@media print{
+  header, h2:not(#regTableTitle), .card:not(#regCard), .summary, footer, #printBtn { display:none !important; }
+  #regTableTitle, #regCard{ display:block !important; }
+  body{background:#fff;color:#000}
+  #regTable input[type=text]{border:none;border-bottom:1px solid #999;background:transparent}
+  #regTable th, #regTable td{border:1px solid #999}
+}
+.pg{color:var(--muted);font-size:.72rem}
+.viz-wrap{display:grid;grid-template-columns:1fr;gap:14px}
+.viz-box{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.viz-box h3{margin:0 0 8px;font-size:.85rem;color:var(--muted);font-weight:600}
+.legend{display:flex;gap:14px;justify-content:center;font-size:.75rem;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.ballast-out{background:var(--panel2);border:1px solid var(--accent2);border-radius:10px;padding:12px;margin-top:10px;font-size:.9rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏎️ STEM Racing™ – Clase Profesional 2025/26</h1>
+  <p>Resumen del reglamento técnico + Simulador de tolerancias y penalizaciones</p>
+</header>
+
+<div class="wrap">
+
+<h2>1. Componentes permitidos del coche (T1.1)</h2>
+<div class="card small">
+El ensamble solo puede incluir: cuerpo (con carga virtual y cámara del cartucho), ensamble de nariz/alerón delantero (nariz + soportes + alerón + end plates), ensamble de alerón trasero, sistemas de ruedas delanteras/traseras, guías del cable tether (delantera y trasera), acabados/calcomanías, calcomanía de logo STEM Racing, Halo, casco del piloto y lastre legal. Cualquier otro componente = "componente adicional" no permitido (T1.18).
+</div>
+
+<h2>2. Clasificación de reglas y penalización</h2>
+<div class="grid">
+  <div class="card"><b>GENERAL</b> <span class="tag GENERAL">GENERAL</span><p class="small">Definen la forma/estilo básico del coche.</p></div>
+  <div class="card"><b>SAFETY</b> <span class="tag SAFETY">SAFETY</span><p class="small">Obligatorias para ser "apto para correr". Pueden implicar reparación forzosa (10 pts).</p></div>
+  <div class="card"><b>PERFORMANCE</b> <span class="tag PERFORMANCE">PERFORMANCE</span><p class="small">Afectan rendimiento. Incumplir = inelegible para "Fastest Car" y "Best Engineered Car".</p></div>
+</div>
+<div class="card small">
+  <b>Penalización proporcional (PP+):</b> aplica solo a las reglas: T3.4, T3.5, T3.6, T3.7, T5.2, T5.6, T7.2, T7.3, T7.4, T7.5, T7.11, T8.6, T8.6.2, T8.6.3, T9.5.1, T9.5.2, T9.5.3, T9.5.4.
+  El excedente fuera del mínimo/máximo absoluto se redondea hacia arriba a la unidad completa (1.0mm o 1.0g) y se aplica la penalización por cada unidad completa fuera de rango.
+  <br><b>Penalización fija:</b> el resto de las reglas aplican el puntaje completo una sola vez si no se cumple, sin importar por cuánto se falle.
+</div>
+
+<h2>3. Puntos críticos de diseño (resumen)</h2>
+<div class="card small">
+<ul>
+<li><b>Halo y Casco:</b> obligatorios, sin cambios dimensionales/de perfil. Muesca circular del Halo a 34.0mm ±1.0mm del suelo (fondo del bolsillo a 24.0mm).</li>
+<li><b>Cámara del cartucho:</b> no debe ser interceptada por ningún objeto en toda su profundidad/circunferencia; zona de seguridad mínima 3.0mm.</li>
+<li><b>Lastre legal:</b> solo permitido en el contenedor bajo el Halo (puede coincidir con la carga virtual, pero no con el bolsillo del Halo).</li>
+<li><b>Alas:</b> deben ser rígidas durante la carrera; alas multi-vane deben solaparse (overlap) para que el chord cuente como continuo.</li>
+<li><b>Guías tether:</b> exactamente 2, ubicadas en/hasta 10.0mm delante del eje delantero y 10.0mm detrás del eje trasero.</li>
+<li><b>Decal STEM Racing™:</b> 30.0mm x 15.0mm, 100% visible en vista lateral, en ambos costados.</li>
+</ul>
+</div>
+
+<h2>4. Tabla de referencia rápida (mm salvo peso en g)</h2>
+<p class="small">La columna "Pág." indica dónde está la regla en el PDF del reglamento (STEM Racing™ Professional Class Technical Regulations 2025-2026) para consulta rápida.</p>
+<div class="card">
+<table id="refTable"><thead><tr><th>Regla</th><th>Parámetro</th><th>Categoría</th><th>Mín</th><th>Máx</th><th>Penalización</th><th>Pág.</th></tr></thead><tbody></tbody></table>
+</div>
+
+<h2>5. Visualizador gráfico</h2>
+<p class="small">Esquema simplificado del coche. Las zonas se colorean en verde cuando el valor introducido cumple, y en rojo cuando está fuera de rango. Gris = sin dato.</p>
+<div class="card">
+  <div class="viz-wrap">
+    <div class="viz-box">
+      <h3>Vista superior (ancho, distancia entre ejes, alas, overhangs)</h3>
+      <svg id="svgTop" viewBox="0 0 600 220" width="100%" height="220"></svg>
+    </div>
+    <div class="viz-box">
+      <h3>Vista lateral (altura total y distancia al suelo)</h3>
+      <svg id="svgSide" viewBox="0 0 600 160" width="100%" height="160"></svg>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:#33d17a"></i> Cumple</span>
+    <span><i class="dot" style="background:#ff4d4d"></i> Fuera de rango</span>
+    <span><i class="dot" style="background:#5b6270"></i> Sin dato</span>
+  </div>
+</div>
+
+<h2>6. Calculadora de lastre legal (T1.22 / T3.6)</h2>
+<p class="small">Si el peso total (sin cartucho) está por debajo del mínimo absoluto de 48.0g, el reglamento indica que se añadirá lastre a razón de <b>0.2g por cada 0.1g de déficit</b> (es decir, el doble del faltante), además de la penalización de 10 pts/g. Usa el mismo campo de peso del simulador (sección 7, regla T3.6).</p>
+<div class="ballast-out" id="ballastOut">Introduce el peso del coche en la sección 7 para calcular el lastre necesario.</div>
+
+<h2>7. Simulador: introduce las medidas de tu coche</h2>
+<p class="small">Deja en blanco lo que no quieras evaluar. El resultado indica la tolerancia disponible o la penalización estimada según el reglamento.</p>
+<div class="card" id="calcCard"></div>
+
+<div class="summary">
+  <div>Penalización total estimada: <b id="totalPts">0</b> pts</div>
+  <button class="reset" id="resetBtn">Borrar todo</button>
+</div>
+
+<h2 id="regTableTitle">8. Tabla de registro de medidas físicas</h2>
+<p class="small">Tabla completa de todas las restricciones dimensionales con su tolerancia permitida (rango mín–máx) y espacio en blanco para anotar la medida real del coche (a mano si se imprime, o escribiendo directamente en el campo). Útil para llevarla al taller o a scrutineering.</p>
+<div class="card" id="regCard">
+  <button class="reset" id="printBtn" style="margin-bottom:10px">🖨️ Imprimir tabla</button>
+  <table id="regTable">
+    <thead><tr>
+      <th>Regla</th><th>Parámetro</th><th>Cat.</th><th>Mín.</th><th>Máx.</th><th>Tolerancia permitida</th><th>Medida actual</th><th>¿Cumple?</th><th>Pág.</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+</div>
+
+<footer>Basado en STEM Racing™ Professional Class Technical Regulations 2025-2026 (20 Aug 2025). Herramienta no oficial de apoyo interno de equipo.</footer>
+
+<script>
+const rules = [
+ {id:'T3.4', name:'Ancho total del coche', cat:'GENERAL', min:65.0, max:85.0, unit:'mm', pen:5, prop:true, pg:19},
+ {id:'T3.5', name:'Altura total del coche', cat:'GENERAL', min:null, max:65.0, unit:'mm', pen:5, prop:true, pg:19},
+ {id:'T3.6', name:'Peso total (sin cartucho)', cat:'PERFORMANCE', min:48.0, max:null, unit:'g', pen:10, prop:true, pg:20},
+ {id:'T3.7', name:'Distancia al suelo (track clearance)', cat:'GENERAL', min:1.5, max:null, unit:'mm', pen:10, prop:true, pg:20},
+ {id:'T5.1', name:'Diámetro cámara del cartucho', cat:'SAFETY', min:18.0, max:18.5, unit:'mm', pen:5, prop:false, pg:26},
+ {id:'T5.2', name:'Distancia cámara al suelo', cat:'GENERAL', min:30.0, max:40.0, unit:'mm', pen:5, prop:true, pg:26},
+ {id:'T5.3', name:'Profundidad de la cámara', cat:'SAFETY', min:45.0, max:58.0, unit:'mm', pen:5, prop:false, pg:26},
+ {id:'T5.5', name:'Zona de seguridad de la cámara', cat:'SAFETY', min:3.0, max:null, unit:'mm', pen:10, prop:false, pg:26},
+ {id:'T5.6', name:'Protrusión visible del cartucho', cat:'PERFORMANCE', min:5.0, max:null, unit:'mm', pen:10, prop:true, pg:27},
+ {id:'T6.2', name:'Diámetro interno guía tether', cat:'SAFETY', min:3.5, max:6.0, unit:'mm', pen:5, prop:false, pg:28},
+ {id:'T7.2 (del.)', name:'Distancia entre ruedas delanteras', cat:'PERFORMANCE', min:38.0, max:null, unit:'mm', pen:2.5, prop:true, pg:30},
+ {id:'T7.2 (tra.)', name:'Distancia entre ruedas traseras', cat:'PERFORMANCE', min:30.0, max:null, unit:'mm', pen:2.5, prop:true, pg:30},
+ {id:'T7.3', name:'Distancia entre ejes (wheelbase)', cat:'PERFORMANCE', min:120.0, max:140.0, unit:'mm', pen:5, prop:true, pg:30},
+ {id:'T7.4 (del.)', name:'Ancho de contacto rueda delantera', cat:'PERFORMANCE', min:13.0, max:null, unit:'mm', pen:2.5, prop:true, pg:31},
+ {id:'T7.4 (tra.)', name:'Ancho de contacto rueda trasera', cat:'PERFORMANCE', min:17.0, max:null, unit:'mm', pen:2.5, prop:true, pg:31},
+ {id:'T7.5', name:'Diámetro de rueda', cat:'PERFORMANCE', min:28.0, max:32.0, unit:'mm', pen:2.5, prop:true, pg:31},
+ {id:'T7.11', name:'Obstrucción vista frontal (ruedas del.)', cat:'PERFORMANCE', min:null, max:20.0, unit:'mm', pen:10, prop:true, pg:33},
+ {id:'T8.2', name:'Overhang nariz (desde plano A)', cat:'GENERAL', min:null, max:40.0, unit:'mm', pen:5, prop:false, pg:35},
+ {id:'T8.6.1', name:'Envergadura ala delantera (span)', cat:'PERFORMANCE', min:50.0, max:null, unit:'mm', pen:2, prop:true, pg:38},
+ {id:'T8.6.2', name:'Cuerda ala delantera (chord)', cat:'PERFORMANCE', min:15.0, max:25.0, unit:'mm', pen:1, prop:true, pg:39},
+ {id:'T8.6.3', name:'Espesor ala delantera (thickness)', cat:'PERFORMANCE', min:2.0, max:6.0, unit:'mm', pen:1, prop:true, pg:39},
+ {id:'T9.4.2', name:'Overhang trasero – longitud (desde plano B)', cat:'GENERAL', min:null, max:40.0, unit:'mm', pen:5, prop:false, pg:41},
+ {id:'T9.4.3', name:'Overhang trasero – altura', cat:'GENERAL', min:null, max:65.0, unit:'mm', pen:5, prop:false, pg:41},
+ {id:'T9.5.1', name:'Envergadura ala trasera (span)', cat:'PERFORMANCE', min:50.0, max:null, unit:'mm', pen:2, prop:true, pg:42},
+ {id:'T9.5.2', name:'Cuerda ala trasera (chord)', cat:'PERFORMANCE', min:15.0, max:25.0, unit:'mm', pen:1, prop:true, pg:42},
+ {id:'T9.5.3', name:'Espesor ala trasera (thickness)', cat:'PERFORMANCE', min:2.0, max:6.0, unit:'mm', pen:1, prop:true, pg:43},
+ {id:'T9.5.4', name:'Desviación de altura ala trasera', cat:'GENERAL', min:null, max:15.0, unit:'mm', pen:1, prop:true, pg:43},
+ {id:'T4.4.4', name:'Altura muesca circular del Halo', cat:'SAFETY', min:33.0, max:35.0, unit:'mm', pen:5, prop:false, pg:24},
+ {id:'T4.8', name:'Espesor de calcomanías', cat:'GENERAL', min:null, max:0.5, unit:'mm', pen:5, prop:false, pg:25},
+ {id:'T4.2 (largo)', name:'Carga virtual – largo', cat:'PERFORMANCE', min:60.0, max:null, unit:'mm', pen:25, prop:false, pg:22},
+ {id:'T4.2 (ancho)', name:'Carga virtual – ancho', cat:'PERFORMANCE', min:55.0, max:null, unit:'mm', pen:25, prop:false, pg:22},
+ {id:'T4.2 (alto)', name:'Carga virtual – alto', cat:'PERFORMANCE', min:10.0, max:null, unit:'mm', pen:25, prop:false, pg:22},
+ {id:'T5.4', name:'Ángulo de la cámara del cartucho', cat:'SAFETY', min:-3.0, max:3.0, unit:'°', pen:5, prop:false, pg:26},
+ {id:'T6.1', name:'Ubicación guía tether (dist. al eje)', cat:'SAFETY', min:null, max:10.0, unit:'mm', pen:10, prop:false, pg:28},
+ {id:'T7.9', name:'Obstrucción vista sup./inf. (delante y detrás de ruedas)', cat:'PERFORMANCE', min:5.0, max:null, unit:'mm', pen:2.5, prop:false, pg:32},
+ {id:'T8.5.3 (ancho)', name:'Endplate ala delantera – ancho', cat:'GENERAL', min:null, max:10.0, unit:'mm', pen:10, prop:false, pg:37},
+ {id:'T8.5.3 (alto)', name:'Endplate ala delantera – altura', cat:'GENERAL', min:null, max:25.0, unit:'mm', pen:10, prop:false, pg:37},
+ {id:'T8.7', name:'Flujo de aire libre – ala delantera', cat:'PERFORMANCE', min:5.0, max:null, unit:'mm', pen:5, prop:false, pg:40},
+ {id:'T9.6', name:'Flujo de aire libre – ala trasera', cat:'PERFORMANCE', min:5.0, max:null, unit:'mm', pen:5, prop:false, pg:44},
+];
+
+const refBody = document.querySelector('#refTable tbody');
+rules.forEach(r=>{
+  refBody.insertAdjacentHTML('beforeend', `<tr><td>${r.id}</td><td>${r.name}</td>
+  <td><span class="tag ${r.cat}">${r.cat}</span></td>
+  <td>${r.min===null?'—':r.min+' '+r.unit}</td>
+  <td>${r.max===null?'—':r.max+' '+r.unit}</td>
+  <td>${r.pen} pts${r.prop?'/unidad':''}</td>
+  <td class="pg">pág. ${r.pg}</td></tr>`);
+});
+
+const calcCard = document.getElementById('calcCard');
+rules.forEach((r,i)=>{
+  calcCard.insertAdjacentHTML('beforeend', `
+  <div class="calc-row">
+    <label>${r.name} <span class="id">${r.id} · ${r.cat} · pág. ${r.pg} · ${r.min!==null?('min '+r.min):''}${r.min!==null&&r.max!==null?' / ':''}${r.max!==null?('max '+r.max):''} ${r.unit}</span></label>
+    <input type="number" step="0.1" id="in_${i}" placeholder="valor (${r.unit})">
+    <div class="status empty" id="st_${i}">sin dato</div>
+  </div>`);
+});
+
+// Adjuntar los listeners después de crear todos los inputs (más fiable que atributos inline)
+rules.forEach((r,i)=>{
+  document.getElementById('in_'+i).addEventListener('input', evaluate);
+});
+document.getElementById('resetBtn').addEventListener('click', resetAll);
+document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+
+// Tabla de registro de medidas físicas (sección 8)
+const regBody = document.querySelector('#regTable tbody');
+rules.forEach(r=>{
+  const tol = (r.min!==null && r.max!==null) ? `${r.min} – ${r.max} ${r.unit}`
+            : (r.min!==null) ? `≥ ${r.min} ${r.unit}`
+            : `≤ ${r.max} ${r.unit}`;
+  regBody.insertAdjacentHTML('beforeend', `<tr>
+    <td>${r.id}</td>
+    <td>${r.name}</td>
+    <td><span class="tag ${r.cat}">${r.cat}</span></td>
+    <td>${r.min===null?'—':r.min}</td>
+    <td>${r.max===null?'—':r.max}</td>
+    <td>${tol}</td>
+    <td><input type="text" placeholder="____ ${r.unit}"></td>
+    <td><input type="text" placeholder=" "></td>
+    <td class="pg">pág. ${r.pg}</td>
+  </tr>`);
+});
+
+// índice rápido por id de regla para el visualizador y el lastre
+const idx = {};
+rules.forEach((r,i)=>{ idx[r.id]=i; });
+
+function getStatus(ruleId){
+  const i = idx[ruleId];
+  if(i===undefined) return {state:'empty'};
+  const r = rules[i];
+  const v = parseFloat(document.getElementById('in_'+i).value);
+  if(isNaN(v)) return {state:'empty', v:null};
+  const outMin = (r.min!==null && v < r.min);
+  const outMax = (r.max!==null && v > r.max);
+  return {state:(outMin||outMax)?'bad':'ok', v};
+}
+
+function colorFor(ruleId){
+  const s = getStatus(ruleId);
+  if(s.state==='empty') return '#5b6270';
+  return s.state==='ok' ? '#33d17a' : '#ff4d4d';
+}
+
+function drawViz(){
+  // Vista superior
+  const top = document.getElementById('svgTop');
+  const cWheel = colorFor('T7.3'); // wheelbase referencia general
+  top.innerHTML = `
+   <rect x="150" y="70" width="300" height="80" rx="10" fill="none" stroke="${colorFor('T3.4')}" stroke-width="3"/>
+   <text x="300" y="65" text-anchor="middle" fill="var(--muted)" font-size="11">Ancho total (T3.4)</text>
+   <line x1="150" y1="185" x2="450" y2="185" stroke="${colorFor('T7.3')}" stroke-width="3"/>
+   <text x="300" y="200" text-anchor="middle" fill="var(--muted)" font-size="11">Distancia entre ejes (T7.3)</text>
+   <rect x="60" y="95" width="70" height="30" fill="none" stroke="${colorFor('T8.6.1')}" stroke-width="3"/>
+   <text x="95" y="90" text-anchor="middle" fill="var(--muted)" font-size="10">Ala del. (T8.6.1)</text>
+   <line x1="130" y1="110" x2="150" y2="110" stroke="${colorFor('T8.2')}" stroke-width="3"/>
+   <text x="140" y="130" text-anchor="middle" fill="var(--muted)" font-size="9">Nariz (T8.2)</text>
+   <rect x="470" y="95" width="70" height="30" fill="none" stroke="${colorFor('T9.5.1')}" stroke-width="3"/>
+   <text x="505" y="90" text-anchor="middle" fill="var(--muted)" font-size="10">Ala tra. (T9.5.1)</text>
+   <line x1="450" y1="110" x2="470" y2="110" stroke="${colorFor('T9.4.2')}" stroke-width="3"/>
+   <text x="460" y="130" text-anchor="middle" fill="var(--muted)" font-size="9">Overhang (T9.4.2)</text>
+   <circle cx="180" cy="70" r="8" fill="${colorFor('T7.2 (del.)')}"/>
+   <circle cx="180" cy="150" r="8" fill="${colorFor('T7.2 (del.)')}"/>
+   <circle cx="420" cy="70" r="8" fill="${colorFor('T7.2 (tra.)')}"/>
+   <circle cx="420" cy="150" r="8" fill="${colorFor('T7.2 (tra.)')}"/>
+  `;
+  // Vista lateral
+  const side = document.getElementById('svgSide');
+  side.innerHTML = `
+   <rect x="120" y="30" width="360" height="70" rx="8" fill="none" stroke="${colorFor('T3.5')}" stroke-width="3"/>
+   <text x="300" y="24" text-anchor="middle" fill="var(--muted)" font-size="11">Altura total (T3.5)</text>
+   <line x1="120" y1="112" x2="480" y2="112" stroke="var(--border)" stroke-width="2"/>
+   <line x1="290" y1="100" x2="290" y2="118" stroke="${colorFor('T3.7')}" stroke-width="4"/>
+   <text x="300" y="135" text-anchor="middle" fill="var(--muted)" font-size="11">Distancia al suelo (T3.7)</text>
+   <rect x="440" y="70" width="40" height="16" fill="none" stroke="${colorFor('T5.6')}" stroke-width="3"/>
+   <text x="460" y="64" text-anchor="middle" fill="var(--muted)" font-size="9">Cartucho (T5.6)</text>
+  `;
+}
+
+function evaluate(){
+  let total = 0;
+  rules.forEach((r,i)=>{
+    const input = document.getElementById('in_'+i);
+    const st = document.getElementById('st_'+i);
+    const v = parseFloat(input.value);
+    if(isNaN(v)){ st.className='status empty'; st.textContent='sin dato'; return; }
+
+    let outMin = (r.min!==null && v < r.min);
+    let outMax = (r.max!==null && v > r.max);
+
+    if(!outMin && !outMax){
+      let tolMsgs = [];
+      if(r.min!==null) tolMsgs.push('margen al mín: '+(v-r.min).toFixed(2)+r.unit);
+      if(r.max!==null) tolMsgs.push('margen al máx: '+(r.max-v).toFixed(2)+r.unit);
+      st.className='status ok';
+      st.textContent = '✔ Cumple — ' + tolMsgs.join(' | ');
+    } else {
+      let excess = outMin ? (r.min - v) : (v - r.max);
+      let penalty;
+      if(r.prop){
+        const units = Math.ceil(excess - 1e-9);
+        penalty = units * r.pen;
+        st.textContent = `✖ Fuera de rango por ${excess.toFixed(2)}${r.unit} → ${units} unidad(es) → -${penalty} pts`;
+      } else {
+        penalty = r.pen;
+        st.textContent = `✖ Fuera de rango por ${excess.toFixed(2)}${r.unit} → penalización fija: -${penalty} pts`;
+      }
+      st.className='status warn';
+      total += penalty;
+    }
+  });
+  document.getElementById('totalPts').textContent = total.toFixed(1).replace(/\.0$/,'');
+  updateBallast();
+  drawViz();
+}
+
+function updateBallast(){
+  const i = idx['T3.6'];
+  const v = parseFloat(document.getElementById('in_'+i).value);
+  const out = document.getElementById('ballastOut');
+  if(isNaN(v)){
+    out.textContent = 'Introduce el peso del coche en la sección 7 para calcular el lastre necesario.';
+    return;
+  }
+  const min = 48.0;
+  if(v >= min){
+    out.innerHTML = `✔ El coche pesa <b>${v.toFixed(2)}g</b>, ya cumple el mínimo de ${min}g. No se requiere lastre adicional.`;
+  } else {
+    const deficit = min - v;
+    const ballast = deficit * 2;
+    const penUnits = Math.ceil(deficit - 1e-9);
+    out.innerHTML = `⚠ El coche pesa <b>${v.toFixed(2)}g</b>, déficit de <b>${deficit.toFixed(2)}g</b> respecto al mínimo (${min}g).<br>
+    Lastre a añadir según reglamento (0.2g por cada 0.1g faltante): <b>${ballast.toFixed(2)}g</b>.<br>
+    Penalización estimada si se registra así en pesaje inicial: ${penUnits} unidad(es) × 10 pts = <b>${(penUnits*10)}pts</b>.`;
+  }
+}
+
+function resetAll(){
+  rules.forEach((r,i)=>{
+    document.getElementById('in_'+i).value='';
+    const st = document.getElementById('st_'+i);
+    st.className='status empty'; st.textContent='sin dato';
+  });
+  document.getElementById('totalPts').textContent='0';
+  updateBallast();
+  drawViz();
+}
+
+drawViz();
+updateBallast();
+</script>
+</body>
+</html>
